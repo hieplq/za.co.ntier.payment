@@ -98,8 +98,8 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 			Map.Entry<Boolean, ProcessInfo> runResult = PaymentSelectionManualProcess.runProcessGeneratePayment(isOnePaymentPerInvoice, 
 					getCtx(), get_TrxName(), getProcessInfo().getProcessUI(), m_ps.getC_PaySelection_ID());
 			if (!runResult.getKey()) {
-				getProcessInfo().setSummary(runResult.getValue().getSummary());
-				return "@ERROR@";
+				addLog(runResult.getValue().getSummary());
+				return "@Error@";
 			}
 		}
 		
