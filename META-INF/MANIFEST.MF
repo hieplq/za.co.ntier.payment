@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Ntier Payment
+Bundle-SymbolicName: za.co.ntier.payment;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Ntier
+Automatic-Module-Name: za.co.ntier.payment
+Bundle-ActivationPolicy: lazy
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version>=17))"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Require-Bundle: org.adempiere.ui.zk;bundle-version="12.0.0"
+Service-Component: OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationEventManager.xml,
+ OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationProcessFactory.xml,
+ OSGI-INF/za.co.ntier.payment.osgi.component.InfoPanelFactory.xml
+Import-Package: org.adempiere.base,
+ org.adempiere.base.annotation,
+ org.adempiere.base.event,
+ org.adempiere.base.event.annotations,
+ org.adempiere.exceptions,
+ org.adempiere.util,
+ org.compiere.minigrid,
+ org.compiere.model,
+ org.compiere.process,
+ org.compiere.util,
+ org.osgi.service.event;version="[1.4.0,2.0.0)"
