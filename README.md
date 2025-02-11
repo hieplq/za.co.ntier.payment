@@ -112,10 +112,10 @@ Handles login to set some global variables in [LoginEventDelegate](/src/za/co/nt
 - `MSysConfig.PAYMENT_SELECTION_MANUAL_ASK_INVOKE_GENERATE` to apply display logic to the process parameter dialog.
 
 ### Info Class
-Overrides some functionality from `InfoWindow` in [InfoPaymentSelectionWindow](/src/za/co/ntier/payment/event/delegate/InfoPaymentSelectionWindow.java).
+Overrides some functionality from `InfoWindow` in [InfoPaymentSelectionWindow](/src/za/co/ntier/payment/info/InfoPaymentSelectionWindow.java).
 
 ### Payment Selection Process
 Handles the payment selection process in [PaymentSelectionManualProcess](/src/za/co/ntier/payment/process/PaymentSelectionManualProcess.java).
 
 ### Factory Class
-Located inside `/src/za/co/ntier/payment/osgi/component`.
+Located inside [factorys](/src/za/co/ntier/payment/osgi/component)
