@@ -1,4 +1,4 @@
-package za.co.ntier.bank.payment.export.osgi.component;
+package za.co.ntier.payment.osgi.component;
 
 import org.adempiere.base.AnnotationBasedModelFactory;
 import org.adempiere.base.IModelFactory;

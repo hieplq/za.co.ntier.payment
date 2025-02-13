@@ -9,11 +9,11 @@ Bundle-ActivationPolicy: lazy
 Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version>=17))"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.adempiere.ui.zk;bundle-version="12.0.0"
-Service-Component: OSGI-INF/za.co.ntier.bank.payment.export.osgi.component.AnnotationModelFactory.xml,
- OSGI-INF/za.co.ntier.bank.payment.export.osgi.component.PaymentExportMappedByNameFactory.xml,
- OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationEventManager.xml,
+Service-Component: OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationEventManager.xml,
+ OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationModelFactory.xml,
  OSGI-INF/za.co.ntier.payment.osgi.component.AnnotationProcessFactory.xml,
- OSGI-INF/za.co.ntier.payment.osgi.component.InfoPanelFactory.xml
+ OSGI-INF/za.co.ntier.payment.osgi.component.InfoPanelFactory.xml,
+ OSGI-INF/za.co.ntier.payment.osgi.component.PaymentExportMappedByNameFactory.xml
 Import-Package: org.adempiere.base,
  org.adempiere.base.annotation,
  org.adempiere.base.event,

@@ -1,4 +1,4 @@
-package za.co.ntier.bank.payment.export.eft;
+package za.co.ntier.payment.export.eft;
 
 import java.io.File;
 import java.io.IOException;

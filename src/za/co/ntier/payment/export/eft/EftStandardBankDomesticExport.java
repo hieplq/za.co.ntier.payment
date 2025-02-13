@@ -1,4 +1,4 @@
-package za.co.ntier.bank.payment.export.eft;
+package za.co.ntier.payment.export.eft;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -26,8 +26,8 @@ import org.compiere.model.Query;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
 
-import za.co.ntier.bank.payment.export.model.I_ZZ_BankCode;
-import za.co.ntier.bank.payment.export.model.X_ZZ_BankCode;
+import za.co.ntier.payment.export.model.I_ZZ_BankCode;
+import za.co.ntier.payment.export.model.X_ZZ_BankCode;
 
 public class EftStandardBankDomesticExport extends PaymentExportSupport {
 	public static enum RecordType {

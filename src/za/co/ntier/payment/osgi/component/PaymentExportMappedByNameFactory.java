@@ -1,11 +1,11 @@
-package za.co.ntier.bank.payment.export.osgi.component;
+package za.co.ntier.payment.osgi.component;
 
 import org.adempiere.base.IPaymentExporterFactory;
 import org.adempiere.base.MappedByNameFactory;
 import org.compiere.util.PaymentExport;
 import org.osgi.service.component.annotations.Component;
 
-import za.co.ntier.bank.payment.export.eft.EftStandardBankDomesticExport;
+import za.co.ntier.payment.export.eft.EftStandardBankDomesticExport;
 
 @Component(
 		 property= {"service.ranking:Integer=2"},

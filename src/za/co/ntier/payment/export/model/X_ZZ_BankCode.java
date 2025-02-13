@@ -15,7 +15,7 @@
  * or via info@compiere.org or http://www.compiere.org/license.html           *
  *****************************************************************************/
 /** Generated Model - DO NOT CHANGE */
-package za.co.ntier.bank.payment.export.model;
+package za.co.ntier.payment.export.model;
 
 import java.sql.ResultSet;
 import java.sql.Timestamp;
