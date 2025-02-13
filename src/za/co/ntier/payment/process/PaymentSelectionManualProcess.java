@@ -53,7 +53,7 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 	Timestamp payDate;
 
 	@Parameter(name="C_DocType_ID")
-	Timestamp docTypeID;
+	int docTypeID;
 
 	@Parameter(name="PaymentRule")
 	String paymentRule;
