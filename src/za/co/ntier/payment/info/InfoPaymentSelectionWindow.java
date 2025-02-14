@@ -5,7 +5,6 @@ import java.sql.Timestamp;
 
 import org.adempiere.webui.editor.WEditor;
 import org.adempiere.webui.event.ValueChangeEvent;
-import org.adempiere.webui.info.InfoWindow;
 import org.adempiere.webui.session.SessionManager;
 import org.compiere.minigrid.IDColumn;
 import org.compiere.model.GridField;
@@ -18,7 +17,7 @@ import org.compiere.util.KeyNamePair;
 /**
  * convention name Info
  */
-public class InfoPaymentSelectionWindow extends InfoWindow {
+public class InfoPaymentSelectionWindow extends ImproveInfoWindow {
 
 	private static final long serialVersionUID = -3587025842411121458L;
 
