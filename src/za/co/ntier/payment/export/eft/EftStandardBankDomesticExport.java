@@ -19,10 +19,13 @@ import java.util.Map.Entry;
 import org.adempiere.exceptions.AdempiereException;
 import org.apache.commons.lang3.StringUtils;
 import org.compiere.model.I_C_BankAccount;
+import org.compiere.model.I_C_CommissionDetail;
 import org.compiere.model.MBPBankAccount;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MPaySelectionCheck;
+import org.compiere.model.MPaySelectionLine;
 import org.compiere.model.Query;
+import org.compiere.model.X_C_PaySelection;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
 
@@ -59,14 +62,15 @@ public class EftStandardBankDomesticExport extends PaymentExportSupport {
 	
 	public Map<String, Object> buildEftSbdHeader(MPaySelectionCheck[] checks, I_ZZ_BankCode bankCode, boolean depositBatch, String paymentRule, StringBuffer err) {
 		Map<String, Object> eftSBDHeader = new HashMap<>();
+		X_C_PaySelection paySelection = (X_C_PaySelection)checks[0].getC_PaySelection();
 		
 		eftSBDHeader.put("compCode", bankCode.getValue());
-		eftSBDHeader.put("compName", bankCode.getName());
+		eftSBDHeader.put("compName", paySelection.getC_BankAccount().getName());
 	    
 		Calendar currentDate = Calendar.getInstance();
 		eftSBDHeader.put("actDate", currentDate);
 		
-		eftSBDHeader.put("stmRef", "MQA");//TODO: This will eventually be a field on payment selection (manual)
+		eftSBDHeader.put("stmRef", paySelection.get_Value(I_C_CommissionDetail.COLUMNNAME_Reference));
 		
 		return eftSBDHeader;
 	}
@@ -97,7 +101,7 @@ public class EftStandardBankDomesticExport extends PaymentExportSupport {
 		
 		for (MPaySelectionCheck check : checks) {
 			MBPBankAccount[] bpBankAcc = MBPBankAccount.getOfBPartner(Env.getCtx(), check.getC_BPartner_ID());
-			
+			MPaySelectionLine firstPaySelectionLine = check.getPaySelectionLines(false)[0];
 			for (MBPBankAccount bpSbdBankAcc : bpBankAcc) {
 				// get first bank account has value for branch number
 				String branchNum = bpSbdBankAcc.get_ValueAsString("ZZ_Branch_Number").trim();
@@ -112,6 +116,8 @@ public class EftStandardBankDomesticExport extends PaymentExportSupport {
 					eftSbdDetailLine.put("accNum", Long.valueOf(bpSbdBankAcc.getAccountNo()));
 					empNum++;
 					eftSbdDetailLine.put("empNum", empNum);
+					eftSbdDetailLine.put("stmRef", firstPaySelectionLine.get_Value(I_C_CommissionDetail.COLUMNNAME_Reference));
+					
 					eftSbdDetailData.add(eftSbdDetailLine);
 					isFoundBankAcc = true;
 					break;

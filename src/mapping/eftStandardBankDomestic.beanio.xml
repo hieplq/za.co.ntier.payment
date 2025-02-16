@@ -38,8 +38,7 @@
 				padding="0" justify="right" format="#" />
 			<field name="accName" length="20" padding=" " justify="left" />
 			<field name="separate2" length="10" padding=" " />
-			<field name="stmRef" literal="MQA" length="15" padding=" "
-				justify="left" />
+			<field name="stmRef" length="15" padding=" " justify="left" />
 			<field name="rtgsInd" literal=" " length="1" />
 		</record>
 		<record name="trailer" class="map" occurs="1" order="3">

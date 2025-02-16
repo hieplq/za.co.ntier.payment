@@ -32,7 +32,7 @@ public interface I_ZZ_BankCode
     /** TableName=ZZ_BankCode */
     public static final String Table_Name = "ZZ_BankCode";
 
-    /** AD_Table_ID=1000002 */
+    /** AD_Table_ID=1000000 */
     public static final int Table_ID = MTable.getTable_ID(Table_Name);
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
@@ -120,19 +120,6 @@ public interface I_ZZ_BankCode
 	  * The record is active in the system
 	  */
 	public boolean isActive();
-
-    /** Column name Name */
-    public static final String COLUMNNAME_Name = "Name";
-
-	/** Set Name.
-	  * Alphanumeric identifier of the entity
-	  */
-	public void setName (String Name);
-
-	/** Get Name.
-	  * Alphanumeric identifier of the entity
-	  */
-	public String getName();
 
     /** Column name Updated */
     public static final String COLUMNNAME_Updated = "Updated";

@@ -32,7 +32,7 @@ public class X_ZZ_BankCode extends PO implements I_ZZ_BankCode, I_Persistent
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250212L;
+	private static final long serialVersionUID = 20250217L;
 
     /** Standard Constructor */
     public X_ZZ_BankCode (Properties ctx, int ZZ_BankCode_ID, String trxName)
@@ -98,7 +98,7 @@ public class X_ZZ_BankCode extends PO implements I_ZZ_BankCode, I_Persistent
     public String toString()
     {
       StringBuilder sb = new StringBuilder ("X_ZZ_BankCode[")
-        .append(get_ID()).append(",Name=").append(getName()).append("]");
+        .append(get_ID()).append("]");
       return sb.toString();
     }
 
@@ -144,22 +144,6 @@ public class X_ZZ_BankCode extends PO implements I_ZZ_BankCode, I_Persistent
 	public Timestamp getDateLastAction()
 	{
 		return (Timestamp)get_Value(COLUMNNAME_DateLastAction);
-	}
-
-	/** Set Name.
-		@param Name Alphanumeric identifier of the entity
-	*/
-	public void setName (String Name)
-	{
-		set_Value (COLUMNNAME_Name, Name);
-	}
-
-	/** Get Name.
-		@return Alphanumeric identifier of the entity
-	  */
-	public String getName()
-	{
-		return (String)get_Value(COLUMNNAME_Name);
 	}
 
 	/** Set Search Key.

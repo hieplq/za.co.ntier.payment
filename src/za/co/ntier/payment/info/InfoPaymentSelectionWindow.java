@@ -127,4 +127,10 @@ public class InfoPaymentSelectionWindow extends ImproveInfoWindow {
         
         return sql;
 	}
+	
+	@Override
+	protected void initExport() {
+		// ntier don't need to display export button
+		// super.initExport();
+	}
 }

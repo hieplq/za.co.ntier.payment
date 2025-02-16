@@ -22,6 +22,7 @@ import org.adempiere.webui.apps.AEnv;
 import org.adempiere.webui.apps.form.WPayPrint;
 import org.adempiere.webui.panel.ADForm;
 import org.adempiere.webui.session.SessionManager;
+import org.compiere.model.I_C_CommissionDetail;
 import org.compiere.model.I_C_InvoicePaySchedule;
 import org.compiere.model.I_C_PaySelectionLine;
 import org.compiere.model.MPInstance;
@@ -46,49 +47,53 @@ import za.co.ntier.payment.event.delegate.LoginEventDelegate;
 @org.adempiere.base.annotation.Process
 public class PaymentSelectionManualProcess extends SvrProcess {
 
-	@Parameter(name="C_BankAccount_ID")
+	@Parameter(name="pC_BankAccount_ID")
 	int bankAccountID;
 
-	@Parameter(name="PayDate")
+	@Parameter(name="pPayDate")
 	Timestamp payDate;
 
-	@Parameter(name="C_DocType_ID")
+	@Parameter(name="pC_DocType_ID")
 	int docTypeID;
 
-	@Parameter(name="PaymentRule")
+	@Parameter(name="pPaymentRule")
 	String paymentRule;
 
-	@Parameter(name="OnlyDue")
+	@Parameter(name="pOnlyDue")
 	boolean isOnlyDue;
 
-	@Parameter(name="PositiveBalance")
+	@Parameter(name="pPositiveBalance")
 	boolean isOnlyPositiveBalance;
 
-	@Parameter(name="IsOnePaymentPerInvoice")
+	@Parameter(name="pIsOnePaymentPerInvoice")
 	boolean isOnePaymentPerInvoice;
 
-	@Parameter(name="C_BPartner_ID")
+	@Parameter(name="pC_BPartner_ID")
 	int bPartnerID;
 	
-	@Parameter(name="isGeneratePayment")
+	@Parameter(name="pisGeneratePayment")
 	boolean isGeneratePayment = false;
 	
-	@Parameter(name="isOpenPrintPayment")
+	@Parameter(name="pisOpenPrintPayment")
 	boolean isOpenPrintPayment = false;
 	
-
-	protected MPaySelection m_ps;
+	@Parameter(name="pName")
+	String paymentSelectionName = null;
 	
-	@Override
-	protected void prepare() {
-		
-	}
+	@Parameter(name="pReference")
+	String reference = null;
+	
+	protected MPaySelection m_ps;
 
 	@Override
 	protected String doIt() throws Exception {
 
 		Map<String, Map<Object, Object>> selectedRecordsMap = getSelectedRecordsFromTempTable(get_TrxName(), getAD_PInstance_ID());
-		m_ps = PaymentSelectionManualProcess.generatePaySelect(selectedRecordsMap, paymentRule, payDate, bankAccountID, isOnePaymentPerInvoice, get_TrxName(), log);
+		m_ps = PaymentSelectionManualProcess.generatePaySelect(
+						selectedRecordsMap, paymentSelectionName, reference, 
+						paymentRule, payDate, bankAccountID, isOnePaymentPerInvoice, 
+						get_TrxName(), log);
+		
 		addBufferLog(0, null, null, 
 				Msg.getMsg(getCtx(), "GeneratedPaymentSelection", new Object [] {m_ps.getName()}), 
 				m_ps.get_Table_ID(), m_ps.getC_PaySelection_ID());
@@ -164,7 +169,8 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 	/**
 	 * convert from PaySelect.generatePaySelect
 	 */
-	public static MPaySelection generatePaySelect(Map<String, Map<Object, Object>> selectedRecordsMap, 
+	public static MPaySelection generatePaySelect(Map<String, Map<Object, Object>> selectedRecordsMap,
+			String paymentSelectionName, String reference,
 			String paymentRule, Timestamp payDate, int bankAccountId, boolean isOnePaymentPerInvoice, 
 			String trxName, CLogger	log) {
 		Trx trx = null;
@@ -179,9 +185,13 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 			m_ps = new MPaySelection(Env.getCtx(), 0, trxName);
 			MRefList paymentRuleRef = MRefList.get(Env.getCtx(), REFERENCE_PAYMENTRULE, paymentRule, null);
 			
-			m_ps.setName (Msg.getMsg(Env.getCtx(), "VPaySelect")
-					+ " - " + paymentRuleRef.getName()
-					+ " - " + payDate);
+			if (Util.isEmpty(paymentSelectionName))
+				paymentSelectionName = Msg.getMsg(Env.getCtx(), "VPaySelect")
+						+ " - " + paymentRuleRef.getName()
+						+ " - " + payDate;
+			m_ps.setName (paymentSelectionName);
+			m_ps.set_ValueOfColumn(I_C_CommissionDetail.COLUMNNAME_Reference, reference);
+			
 			m_ps.setPayDate (payDate);
 			m_ps.setC_BankAccount_ID(bankAccountId);
 			m_ps.setIsApproved(true);
@@ -201,10 +211,12 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 				BigDecimal WriteOffAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_WriteOffAmt);//7
 				BigDecimal PayAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_PayAmt);//10
 				boolean isSOTrx = X_C_Order.PAYMENTRULE_DirectDebit.equals(paymentRule);
-
+				
+				psl.setPayAmt(PayAmt);
 				//
 				psl.setInvoice(C_Invoice_ID, isSOTrx,
 					OpenAmt, PayAmt, DiscountAmt, WriteOffAmt);
+				psl.set_ValueOfColumn(I_C_CommissionDetail.COLUMNNAME_Reference, selectedRow.get(I_C_CommissionDetail.COLUMNNAME_Reference));
 				psl.saveEx(trxName);
 				if (log.isLoggable(Level.FINE)) log.fine("C_Invoice_ID=" + C_Invoice_ID + ", PayAmt=" + PayAmt);
             }
@@ -227,6 +239,7 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 	
 	public static enum TSelectionInfoWindowColumn {
 		ID("T_Selection_ID"), 
+		UUID("t_selection_uu"),		
 		VIEW_ID("viewid"),
 		COLUMN_NAME("ColumnName"),
 		VALUE_STR("Value_String"),
@@ -249,7 +262,7 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 		Map<String, Map<Object, Object>> selectionValueMap = new HashMap<>();
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("SELECT T_Selection_ID, viewid, ColumnName, Value_String, Value_Number, Value_Date ");
+		sql.append("SELECT T_Selection_ID, t_selection_uu, viewid, ColumnName, Value_String, Value_Number, Value_Date ");
 		sql.append("FROM T_Selection_InfoWindow ");
 		sql.append("WHERE AD_PInstance_ID=? ");
 		sql.append("ORDER BY T_Selection_ID, viewid, ColumnName ");
@@ -265,17 +278,17 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 			Map<Object, Object> selectedRow = null;
 			
 			while (rs.next()){
-				int keyColumn = rs.getInt(TSelectionInfoWindowColumn.ID.toString());//invoice ID
+				int keyColumn = rs.getInt(TSelectionInfoWindowColumn.ID.toString());
+				String keyUUColumn = rs.getString(TSelectionInfoWindowColumn.UUID.toString());
+				
 				String columnName = rs.getString(TSelectionInfoWindowColumn.COLUMN_NAME.toString());
 				String viewId = rs.getString(TSelectionInfoWindowColumn.VIEW_ID.toString());
 
 				Object strValue = rs.getObject(TSelectionInfoWindowColumn.VALUE_STR.toString());
-
 				Object numValue = rs.getObject(TSelectionInfoWindowColumn.VALUE_NUM.toString());
-				
 				Object dateValue = rs.getObject(TSelectionInfoWindowColumn.VALUE_DATE.toString());
 				
-				String key = keyColumn + "_" + String.valueOf(viewId);
+				String key = Integer.valueOf(keyColumn) + "_" + keyUUColumn + "_" + String.valueOf(viewId);
 				
 				Object value = null;
 				if (strValue != null)
@@ -294,6 +307,7 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 					
 					selectedRow.put(TSelectionInfoWindowColumn.ID, keyColumn);
 					selectedRow.put(TSelectionInfoWindowColumn.VIEW_ID, viewId);
+					selectedRow.put(TSelectionInfoWindowColumn.UUID, keyUUColumn);
 				}
 				
 				selectedRow.put(columnName, value);
@@ -309,5 +323,11 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 			rs = null;
 			pstmt = null;
 		}		
+	}
+
+	@Override
+	protected void prepare() {
+		// TODO Auto-generated method stub
+		
 	}
 }
