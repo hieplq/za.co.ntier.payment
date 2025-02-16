@@ -207,8 +207,8 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 				MPaySelectionLine psl = new MPaySelectionLine (m_ps, line, paymentRule);
 				int C_Invoice_ID = (int)selectedRow.get(TSelectionInfoWindowColumn.ID);
 				BigDecimal OpenAmt = (BigDecimal)selectedRow.get(I_C_InvoicePaySchedule.COLUMNNAME_DueAmt);//9
-				BigDecimal DiscountAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_DiscountAmt);//6
-				BigDecimal WriteOffAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_WriteOffAmt);//7
+				BigDecimal DiscountAmt = BigDecimal.ZERO; //(BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_DiscountAmt);//6
+				BigDecimal WriteOffAmt = BigDecimal.ZERO; //(BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_WriteOffAmt);//7
 				BigDecimal PayAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_PayAmt);//10
 				boolean isSOTrx = X_C_Order.PAYMENTRULE_DirectDebit.equals(paymentRule);
 				
