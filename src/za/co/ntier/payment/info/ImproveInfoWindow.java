@@ -8,12 +8,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.adempiere.webui.editor.WEditor;
+import org.adempiere.webui.event.ValueChangeEvent;
 import org.adempiere.webui.info.InfoWindow;
 import org.compiere.minigrid.IDColumn;
 import org.compiere.minigrid.UUIDColumn;
 import org.compiere.model.GridField;
 import org.compiere.model.MTable;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.NamePair;
 import org.compiere.util.ValueNamePair;
@@ -44,6 +47,85 @@ public class ImproveInfoWindow extends InfoWindow {
 		super(WindowNo, tableName, keyColumn, queryValue, multipleSelection, whereClause, AD_InfoWindow_ID, lookup,
 				field, predefinedContextVariables);
 	}
+	
+	/**
+	 * by default when user change on parameter, value is set to info context only
+	 * it's not set to global context, so logic (default, readonly,...) and quick widget info isn't refresh
+	 * this override to improve by set value to global context
+	 */
+	@Override
+	public void valueChange(ValueChangeEvent evt) {
+		super.valueChange(evt);
+		setInfoContext(evt, false);
+	}
+	
+	/**
+	 * {@link #setInfoContext(WEditor, boolean)}
+	 * @param evt
+	 * @param isSetToInfoContext
+	 */
+	public void setInfoContext(ValueChangeEvent evt, boolean isSetToInfoContext) {
+		if (evt != null && evt.getSource() instanceof WEditor){
+            WEditor editor = (WEditor)evt.getSource();
+            setInfoContext(editor.getColumnName(), editor.getValue(), isSetToInfoContext);
+        }
+	}
+	
+	/**
+	 * {@link #setInfoContext(String, Object, boolean)}
+	 * @param editor
+	 * @param isSetToInfoContext
+	 */
+	public void setInfoContext(WEditor editor, boolean isSetToInfoContext) {
+		setInfoContext(editor.getColumnName(), editor.getValue(), isSetToInfoContext);
+	}
+	
+	/**
+	 * set value to global context in case isSetToInfoContext = true then set to info context also
+	 * @param key
+	 * @param value
+	 * @param isSetToInfoContext
+	 */
+	public void setInfoContext(String key, Object value, boolean isSetToInfoContext) {
+		if (value == null) {
+			Env.setContext(infoContext, p_WindowNo, key, (String)null);
+			return;
+		}
+		
+		if(value instanceof KeyNamePair)
+			value = ((KeyNamePair)value).getKey();
+		else if(value instanceof IDColumn)
+			value = ((IDColumn)value).getRecord_ID();
+		
+		setContext(key, value);
+		
+		if (isSetToInfoContext) {
+			paraCtxValues.put(key, value);
+			
+			if (value.getClass().equals(Integer.class)) {
+				Integer intValue = (Integer)value;
+	            Env.setContext(infoContext, p_WindowNo, key, intValue);
+	            Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, intValue);
+	        } else if (value.getClass().equals(String.class)) {
+	        	String strValue = (String)value;
+	            Env.setContext(infoContext, p_WindowNo, key, strValue);
+	            Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, strValue);
+	        } else if (value.getClass().equals(Timestamp.class)) {
+				Timestamp timeValue = (Timestamp) value;
+				Env.setContext(infoContext, p_WindowNo, key, timeValue);
+				Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO+"|" + key, timeValue);
+	        } else if (value.getClass().equals(Boolean.class)) {
+	        	Boolean boolValue = (Boolean)value;
+	        	Env.setContext(infoContext, p_WindowNo, key, boolValue);
+	        	Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, boolValue);
+	        } else {
+	        	String objValue = value.toString();
+	        	Env.setContext(infoContext, p_WindowNo, key, objValue);
+	        	Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, objValue);
+	        	log.warning("Not a supported type. Use with care");
+	        }
+		}
+    }
 	
 	/**
 	 * override to use for MQA before done IDEMPIERE-6427

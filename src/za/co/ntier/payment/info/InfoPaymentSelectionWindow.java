@@ -1,18 +1,15 @@
 package za.co.ntier.payment.info;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 
 import org.adempiere.webui.editor.WEditor;
 import org.adempiere.webui.event.ValueChangeEvent;
 import org.adempiere.webui.session.SessionManager;
-import org.compiere.minigrid.IDColumn;
 import org.compiere.model.GridField;
 import org.compiere.model.MBankAccount;
 import org.compiere.model.X_AD_CtxHelp;
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
-import org.compiere.util.KeyNamePair;
 
 /**
  * convention name Info
@@ -45,17 +42,13 @@ public class InfoPaymentSelectionWindow extends ImproveInfoWindow {
 					currencyId = ba.getC_Currency_ID();
 					bankBalance = ba.getCurrentBalance();
 					bankBalanceStr = DisplayType.getNumberFormat(DisplayType.Amount).format(bankBalance);
-					
 				}
             	
-				setInfoContext("C_Currency_ID", currencyId);
-				setInfoContext("CurrentBalance", bankBalanceStr);
-				setInfoContext("C_BankAccount_ID", bankAccountID);
+				setInfoContext("C_Currency_ID", currencyId, true);
+				setInfoContext("CurrentBalance", bankBalanceStr, true);
+				setInfoContext("C_BankAccount_ID", bankAccountID, true);
 				
 				// main context
-				// TODO: need to setto main context because quick info window is not know about info context
-				setContext("CurrentBalance", bankBalanceStr);
-				setContext("C_Currency_ID", currencyId);
 				if (infoWindow != null)
 					SessionManager.getAppDesktop().updateHelpContext(X_AD_CtxHelp.CTXTYPE_Info, infoWindow.getAD_InfoWindow_ID(), this);
 				else
@@ -63,43 +56,6 @@ public class InfoPaymentSelectionWindow extends ImproveInfoWindow {
             }
         }
 	}
-	
-	public void setInfoContext(String key, Object value) {
-		if (value == null) {
-			Env.setContext(infoContext, p_WindowNo, key, (String)null);
-			return;
-		}
-		
-		if(value instanceof KeyNamePair)
-			value = ((KeyNamePair)value).getKey();
-		else if(value instanceof IDColumn)
-			value = ((IDColumn)value).getRecord_ID();
-		
-		paraCtxValues.put(key, value);
-		
-		if (value.getClass().equals(Integer.class)) {
-			Integer intValue = (Integer)value;
-            Env.setContext(infoContext, p_WindowNo, key, intValue);
-            Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, intValue);
-        } else if (value.getClass().equals(String.class)) {
-        	String strValue = (String)value;
-            Env.setContext(infoContext, p_WindowNo, key, strValue);
-            Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, strValue);
-        } else if (value.getClass().equals(Timestamp.class)) {
-			Timestamp timeValue = (Timestamp) value;
-			Env.setContext(infoContext, p_WindowNo, key, timeValue);
-			Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO+"|" + key, timeValue);
-        } else if (value.getClass().equals(Boolean.class)) {
-        	Boolean boolValue = (Boolean)value;
-        	Env.setContext(infoContext, p_WindowNo, key, boolValue);
-        	Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, boolValue);
-        } else {
-        	String objValue = value.toString();
-        	Env.setContext(infoContext, p_WindowNo, key, objValue);
-        	Env.setContext(infoContext, p_WindowNo, Env.TAB_INFO, key, objValue);
-        	log.warning("Not a supported type. Use with care");
-        }
-    }
 	
 	@Override
 	protected String getSQLWhere() {
