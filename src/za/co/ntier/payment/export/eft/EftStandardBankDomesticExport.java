@@ -24,6 +24,7 @@ import org.compiere.model.MBPBankAccount;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MPaySelectionCheck;
 import org.compiere.model.MPaySelectionLine;
+import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.model.X_C_PaySelection;
 import org.compiere.util.Env;
@@ -65,7 +66,9 @@ public class EftStandardBankDomesticExport extends PaymentExportSupport {
 		X_C_PaySelection paySelection = (X_C_PaySelection)checks[0].getC_PaySelection();
 		
 		eftSBDHeader.put("compCode", bankCode.getValue());
-		eftSBDHeader.put("compName", paySelection.getC_BankAccount().getName());
+		String bankAccountName = ((PO)paySelection.getC_BankAccount()).get_ValueAsString(I_C_BankAccount.COLUMNNAME_Name);
+		eftSBDHeader.put("compName", bankAccountName);
+		
 	    
 		Calendar currentDate = Calendar.getInstance();
 		eftSBDHeader.put("actDate", currentDate);
