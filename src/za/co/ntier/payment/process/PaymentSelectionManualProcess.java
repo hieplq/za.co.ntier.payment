@@ -23,7 +23,6 @@ import org.adempiere.webui.apps.form.WPayPrint;
 import org.adempiere.webui.panel.ADForm;
 import org.adempiere.webui.session.SessionManager;
 import org.compiere.model.I_C_CommissionDetail;
-import org.compiere.model.I_C_InvoicePaySchedule;
 import org.compiere.model.I_C_PaySelectionLine;
 import org.compiere.model.MPInstance;
 import org.compiere.model.MPaySelection;
@@ -206,7 +205,7 @@ public class PaymentSelectionManualProcess extends SvrProcess {
 				Map<Object, Object> selectedRow = selectedRecordsEntry.getValue();
 				MPaySelectionLine psl = new MPaySelectionLine (m_ps, line, paymentRule);
 				int C_Invoice_ID = (int)selectedRow.get(TSelectionInfoWindowColumn.ID);
-				BigDecimal OpenAmt = (BigDecimal)selectedRow.get(I_C_InvoicePaySchedule.COLUMNNAME_DueAmt);//9
+				BigDecimal OpenAmt = BigDecimal.ZERO; //(BigDecimal)selectedRow.get(I_C_InvoicePaySchedule.COLUMNNAME_DueAmt);//9
 				BigDecimal DiscountAmt = BigDecimal.ZERO; //(BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_DiscountAmt);//6
 				BigDecimal WriteOffAmt = BigDecimal.ZERO; //(BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_WriteOffAmt);//7
 				BigDecimal PayAmt = (BigDecimal)selectedRow.get(I_C_PaySelectionLine.COLUMNNAME_PayAmt);//10
