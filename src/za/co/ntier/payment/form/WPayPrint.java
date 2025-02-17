@@ -5,10 +5,12 @@ import java.io.FileInputStream;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.adempiere.util.Callback;
 import org.adempiere.webui.apps.AEnv;
 import org.adempiere.webui.component.Window;
 import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
+import org.adempiere.webui.window.Dialog;
 import org.adempiere.webui.window.SimplePDFViewer;
 import org.compiere.model.MPaySelectionCheck;
 import org.compiere.util.Env;
@@ -47,17 +49,20 @@ public class WPayPrint extends org.adempiere.webui.apps.form.WPayPrint {
 			remitViewer = new SimplePDFViewer(name, new FileInputStream(outFile));
 			remitViewer.setAttribute(Window.MODE_KEY, Window.MODE_EMBEDDED);
 			ZKUpdateUtil.setWidth(remitViewer, "100%");
+			dispose();
+			SessionManager.getAppDesktop().showWindow(remitViewer);
 		}
 		catch (Exception e)
 		{
 			log.log(Level.SEVERE, e.getLocalizedMessage(), e);
+			Dialog.error(m_WindowNo, Msg.getMsg(Env.getCtx(), "ZZ_PrintRemittanceError"), e.getLocalizedMessage(), 
+					new Callback<Integer>() {
+						@Override
+						public void onCallback(Integer result) {
+							dispose();
+						}
+					}, Msg.getMsg(Env.getCtx(), "ZZ_PrintRemittanceErrorTitle"));
 		}
-		
-		
-		dispose();
-
-		if (remitViewer != null)
-			SessionManager.getAppDesktop().showWindow(remitViewer);
 	}
 	
 	@Override
@@ -74,17 +79,21 @@ public class WPayPrint extends org.adempiere.webui.apps.form.WPayPrint {
 		try
 		{
 			//int lastDocumentNo = startDocumentNo;
-			for (int i = 0; i < m_checks.length; i++)
-			{				
+			for (int i = 0; i < m_checks.length; i++){				
 				//	Update BankAccountDoc
 				MPaySelectionCheck.confirmPrint(m_checks[i], m_batch);
 			}
-			dispose();
-		}
-		catch (Exception e)
-		{
+			
+			Dialog.info(m_WindowNo, Msg.getMsg(Env.getCtx(), "ZZ_PaymentCreatedCompleted"), null, Msg.getMsg(Env.getCtx(), "PaymentCreated"), 
+					new Callback<Integer>() {
+						@Override
+						public void onCallback(Integer result) {
+							dispose();
+						}
+					});
+		}catch (Exception e){
 			log.log(Level.SEVERE, e.getLocalizedMessage(), e);
-			return;
+			Dialog.error(m_WindowNo, Msg.getMsg(Env.getCtx(), "PaymentError"), e.getLocalizedMessage());
 		}
 	}
 }
