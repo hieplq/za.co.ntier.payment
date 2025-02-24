@@ -320,29 +320,32 @@ public class ImportBudgetPeriods extends SvrProcess{
 					Timestamp periodDate = Timestamp.valueOf(perdiodMonth);
 					MPeriod peridod = MPeriod.get(getCtx(), periodDate, imp.getAD_Org_ID(), null);
 					
-                	String journalMapKey = imp.getAD_Org_ID() + "_" + Integer.toString(peridod.getC_Period_ID());
-                	MJournal journalPerOrgPeriod = mapJournal.get(journalMapKey);
+                	String journalMapKey = Integer.toString(peridod.getC_Period_ID());
+                	MJournal journalPerPeriod = mapJournal.get(journalMapKey);
                 	
-                	if (journalPerOrgPeriod == null) {
-                		journalPerOrgPeriod = new MJournal(getCtx(), 0, trxName);
-                		journalPerOrgPeriod.setGL_JournalBatch_ID(batch.getGL_JournalBatch_ID());
-                		journalPerOrgPeriod.setClientOrg(adClientID, imp.getAD_Org_ID());
+                	if (journalPerPeriod == null) {
+                		journalPerPeriod = new MJournal(getCtx(), 0, trxName);
+                		journalPerPeriod.setGL_JournalBatch_ID(batch.getGL_JournalBatch_ID());
+                		journalPerPeriod.setClientOrg(adClientID, adOrgID);
                 		
     					String description = Msg.getMsg(Env.getCtx(), "ZZ_GLImportDesc", new Object [] {imp.getOrgValue(), peridod.getName()});
-    					journalPerOrgPeriod.setDescription(description);
-    					journalPerOrgPeriod.setC_DocType_ID (imp.getC_DocType_ID());
-    					journalPerOrgPeriod.setGL_Category_ID (imp.getGL_Category_ID());
-    					journalPerOrgPeriod.setPostingType (imp.getPostingType());
-    					journalPerOrgPeriod.setGL_Budget_ID(imp.getGL_Budget_ID());
-    					journalPerOrgPeriod.setC_Currency_ID(imp.getC_Currency_ID());
+    					journalPerPeriod.setDescription(description);
+    					journalPerPeriod.setC_DocType_ID (imp.getC_DocType_ID());
+    					journalPerPeriod.setGL_Category_ID (imp.getGL_Category_ID());
+    					journalPerPeriod.setPostingType (imp.getPostingType());
+    					journalPerPeriod.setGL_Budget_ID(imp.getGL_Budget_ID());
+    					journalPerPeriod.setC_Currency_ID(imp.getC_Currency_ID());
     					
-    					journalPerOrgPeriod.setDateAcct(periodDate);
-    					journalPerOrgPeriod.setDateDoc (imp.getDateAcct());
+    					journalPerPeriod.setDateAcct(periodDate);
+    					journalPerPeriod.setDateDoc (imp.getDateAcct());
     					
-    					journalPerOrgPeriod.saveEx(trxName);
+    					journalPerPeriod.saveEx(trxName);
+    					
+    					mapJournal.put(journalMapKey, journalPerPeriod);
                 	}
                 	
-                	MJournalLine line = new MJournalLine (journalPerOrgPeriod);
+                	MJournalLine line = new MJournalLine (journalPerPeriod);
+                	line.setAD_Org_ID(imp.getAD_Org_ID());
     				line.setDescription(imp.getDescription());
     				line.setC_Currency_ID(imp.getC_Currency_ID());
     				
@@ -355,11 +358,12 @@ public class ImportBudgetPeriods extends SvrProcess{
     				
     				line.setDateAcct(periodDate);
     				line.setAccount_ID(imp.getAccount_ID());
+    				line.setC_Project_ID(imp.getC_Project_ID());
     				line.saveEx(trxName);
     				noInsertLine++;
     				
     				imp.setGL_JournalBatch_ID(batch.getGL_JournalBatch_ID());
-					imp.setGL_Journal_ID(journalPerOrgPeriod.getGL_Journal_ID());
+					imp.setGL_Journal_ID(journalPerPeriod.getGL_Journal_ID());
 					imp.setGL_JournalLine_ID(line.getGL_JournalLine_ID());
 					imp.setI_IsImported(true);
 					imp.setProcessed(true);
