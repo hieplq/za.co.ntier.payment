@@ -313,7 +313,7 @@ public class ImportBudgetPeriods extends SvrProcess{
 					PeriodNum period = PeriodNum.values()[periodIndex];
 					Object periodAmount = imp.get_Value(period.toString());
 					BigDecimal amt = (BigDecimal) periodAmount;
-                    if (periodAmount == null || amt.compareTo(BigDecimal.ZERO) < 0) {
+                    if (periodAmount == null || amt.compareTo(BigDecimal.ZERO) == 0) {
                     	continue;
                     }
                 	//m_DateAcct.setm
