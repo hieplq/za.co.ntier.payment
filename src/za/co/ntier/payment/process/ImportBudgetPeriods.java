@@ -312,7 +312,8 @@ public class ImportBudgetPeriods extends SvrProcess{
 				for (int periodIndex = 0; periodIndex < PeriodNum.values().length; periodIndex++) {
 					PeriodNum period = PeriodNum.values()[periodIndex];
 					Object periodAmount = imp.get_Value(period.toString());
-                    if (periodAmount == null) {
+					BigDecimal amt = (BigDecimal) periodAmount;
+                    if (periodAmount == null || amt.compareTo(BigDecimal.ZERO) < 0) {
                     	continue;
                     }
                 	//m_DateAcct.setm
@@ -346,11 +347,10 @@ public class ImportBudgetPeriods extends SvrProcess{
                 	
                 	MJournalLine line = new MJournalLine (journalPerPeriod);
                 	line.setAD_Org_ID(imp.getAD_Org_ID());
+                	line.set_ValueOfColumn(MJournalBatch.COLUMNNAME_GL_JournalBatch_ID, journalPerPeriod.getGL_JournalBatch_ID());
     				line.setDescription(imp.getDescription());
     				line.setC_Currency_ID(imp.getC_Currency_ID());
     				
-    				BigDecimal amt = (BigDecimal) periodAmount;
-    				//line.set_ValueOfColumn(I_GL_JournalLine.COLUMNNAME_AmtSourceCr, );
     				if (amt.compareTo(BigDecimal.ZERO) < 0)
     					line.setAmtSourceCr(amt.abs());
 					else
