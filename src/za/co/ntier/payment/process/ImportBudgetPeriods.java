@@ -3,19 +3,27 @@ package za.co.ntier.payment.process;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
 import org.adempiere.base.annotation.Parameter;
+import org.adempiere.exceptions.AdempiereException;
+import org.apache.commons.collections4.MultiMapUtils;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.commons.lang3.StringUtils;
 import org.compiere.model.I_GL_JournalBatch;
 import org.compiere.model.MJournal;
 import org.compiere.model.MJournalBatch;
 import org.compiere.model.MJournalLine;
+import org.compiere.model.MOrg;
 import org.compiere.model.MPeriod;
 import org.compiere.model.X_I_GLJournal;
 import org.compiere.process.SvrProcess;
@@ -148,7 +156,7 @@ public class ImportBudgetPeriods extends SvrProcess{
 						AD_Org_ID=COALESCE(
 							(SELECT o.AD_Org_ID FROM AD_Org o
 						 	WHERE o.Value=i.OrgValue AND o.IsSummary='N' AND i.AD_Client_ID=o.AD_Client_ID),AD_Org_ID)
-					WHERE (AD_Org_ID IS NULL OR AD_Org_ID=0) AND OrgValue IS NOT NULL
+					WHERE OrgValue IS NOT NULL
 						AND I_IsImported<>'Y' AND AD_Client_ID=%1$d
 				""", adClientID);
 		int no = DB.executeUpdateEx(sqlLookupOrgForLine.toString(), get_TrxName());
@@ -184,7 +192,7 @@ public class ImportBudgetPeriods extends SvrProcess{
 										INNER JOIN C_AcctSchema_Element ase ON (e.C_Element_ID=ase.C_Element_ID AND ase.ElementType='AC')
 									WHERE ev.Value=i.AccountValue AND ev.IsSummary='N'
 										AND i.C_AcctSchema_ID=ase.C_AcctSchema_ID AND i.AD_Client_ID=ev.AD_Client_ID)
-						WHERE Account_ID IS NULL AND AccountValue IS NOT NULL
+						WHERE AccountValue IS NOT NULL
 							AND I_IsImported<>'Y' AND AD_Client_ID=%1$d 
 				""", adClientID);
 		int no = DB.executeUpdateEx(sqlLookupAccount, get_TrxName());
@@ -210,8 +218,8 @@ public class ImportBudgetPeriods extends SvrProcess{
                     SET
                         C_Project_ID=(SELECT p.C_Project_ID FROM C_Project p
                         				WHERE p.Value=i.ProjectValue AND p.IsSummary='N' AND i.AD_Client_ID=p.AD_Client_ID)
-                        WHERE 
-                        	C_Project_ID IS NULL AND ProjectValue IS NOT NULL
+                    	WHERE 
+                        	ProjectValue IS NOT NULL
                         	AND I_IsImported<>'Y' AND AD_Client_ID=%1$d
                 """, adClientID);
 
@@ -222,7 +230,7 @@ public class ImportBudgetPeriods extends SvrProcess{
 					UPDATE I_GLJournal i
 					SET 
 						I_IsImported='E', I_ErrorMsg=I_ErrorMsg||'ERR=Invalid Project, '
-						WHERE C_Project_ID IS NULL AND ProjectValue IS NOT NULL
+					WHERE C_Project_ID IS NULL AND ProjectValue IS NOT NULL
 						AND I_IsImported<>'Y' AND AD_Client_ID=%1$d 
 				""", adClientID);
 
@@ -243,31 +251,102 @@ public class ImportBudgetPeriods extends SvrProcess{
 	}
 	
 	public static enum PeriodNum {
-		ONE("A_Period_1"), 
-		TWO("A_Period_2"), 
-		THREE("A_Period_3"),
-		FOUR("A_Period_4"),
-		FIVE("A_Period_5"),
-		SIX("A_Period_6"),
-		SEVEN("A_Period_7"),
-		EIGHT("A_Period_8"),
-		NIGHT("A_Period_9"),
-		TEN("A_Period_10"),
-		ELEVENT("A_Period_11"),
-		TWELVE("A_Period_12");
-		private final String periodNum;; 
-
-		PeriodNum(String periodNum) {
-	        this.periodNum = periodNum;
+		ONE(1), 
+		TWO(2), 
+		THREE(3),
+		FOUR(4),
+		FIVE(5),
+		SIX(6),
+		SEVEN(7),
+		EIGHT(8),
+		NIGHT(9),
+		TEN(10),
+		ELEVENT(11),
+		TWELVE(12);
+		private final int periodNum;; 
+		private final String value;
+		private final String prestyValue;
+		
+		PeriodNum(int periodNum) {
+			if (0 < periodNum && periodNum < 13) {
+				this.periodNum = periodNum;
+				this.value = "A_Period_" + this.periodNum;
+				this.prestyValue = "period " + this.periodNum;
+			}else
+				throw new IllegalArgumentException("Invalid period number");
 	    }
 		
 		@Override
 	    public String toString() {
-	        return this.periodNum; 
+	        return prestyValue;
 	    }
+		
+		public String toValue() {
+			return value;
+		}
+	}
+	Map<Integer, Integer> orgCalendarMap = new HashMap<>();
+	Map<Integer, EnumMap<PeriodNum, MPeriod>> cache = new HashMap<>();
+	public MPeriod getPeriod(Timestamp dateAcct, int orgID, PeriodNum periodNum) {
+		
+		Integer calendarID = orgCalendarMap.get(orgID);
+		if (calendarID == null) {
+			calendarID = MPeriod.getC_Calendar_ID(Env.getCtx(), orgID);
+			orgCalendarMap.put(orgID, calendarID);
+		}
+
+		EnumMap<PeriodNum, MPeriod> periodByCalendar = cache.get(calendarID);
+		if (periodByCalendar == null) {
+			periodByCalendar = getPeriods(dateAcct, calendarID);
+			cache.put(calendarID, periodByCalendar);
+		}
+		
+		return periodByCalendar.get(periodNum);
+	}
+	
+	public EnumMap<PeriodNum, MPeriod> getPeriods(Timestamp dateAcct, int calendarID) {
+		EnumMap<PeriodNum, MPeriod> periods = new EnumMap<>(PeriodNum.class);
+
+        String sql = """
+        		SELECT 
+        			*
+        		FROM 
+        			C_Period
+        		WHERE 
+        			C_Year_ID IN (SELECT 
+        								p.C_Year_ID
+        							FROM 
+        								C_Year y INNER JOIN C_Period p ON (y.C_Year_ID=p.C_Year_ID)
+        							WHERE 
+        								y.C_Calendar_ID=? AND ? BETWEEN StartDate AND EndDate)
+        			AND IsActive=? AND PeriodType=? ORDER BY StartDate  
+        		""";
+        
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try{
+			pstmt = DB.prepareStatement(sql, null);
+			pstmt.setInt (1, calendarID);
+			pstmt.setTimestamp (2, dateAcct);
+			pstmt.setString (3, "Y");
+			pstmt.setString (4, "S");
+			rs = pstmt.executeQuery();
+
+			for (int periodIndex = 0; periodIndex < PeriodNum.values().length && rs.next(); periodIndex++) {
+				periods.put(PeriodNum.values()[periodIndex], new MPeriod(Env.getCtx(), rs, null));
+			}
+
+		}catch (SQLException e){
+			log.log(Level.SEVERE, sql, e);
+			throw new AdempiereException(e.getMessage());
+		}finally{
+			DB.close(rs, pstmt);
+			rs = null; pstmt = null;
+		}
+		return periods;
 	}
 		
-	public void doImport (String trxName) {
+	public void doImport (String trxName) throws Exception {
 		String sqlImportedBudget = String.format("""
 				SELECT 
 					* 
@@ -285,6 +364,9 @@ public class ImportBudgetPeriods extends SvrProcess{
 			rs = pstmt.executeQuery ();
 			MJournalBatch batch = null;
 			Map<String, MJournal> mapJournal = new HashMap<>();
+			
+			MultiValuedMap<MultiKey<Object>, X_I_GLJournal> periodErrosInfo = MultiMapUtils.newListValuedHashMap();
+
 			while (rs.next()){
 				X_I_GLJournal imp = new X_I_GLJournal (getCtx (), rs, trxName);
 				
@@ -299,27 +381,42 @@ public class ImportBudgetPeriods extends SvrProcess{
 					batch.setC_DocType_ID(imp.getC_DocType_ID());
 					batch.setPostingType(imp.getPostingType());
 					batch.setGL_Category_ID(imp.getGL_Category_ID());
-					MPeriod periodDoc = MPeriod.get(getCtx(), dateAcct, adOrgID, null);
+					
+					MPeriod periodDoc = getPeriod(dateAcct, adOrgID, PeriodNum.ONE);
+					if (periodDoc == null) {
+						MOrg org = MOrg.get(adOrgID);
+						addLog(Msg.getMsg(Env.getCtx(), "ZZ_NotFountPeriod", new Object [] {org.getName(), dateAcct}));
+						throw new Exception ("@Error@");
+					}
+						
 					batch.setC_Period_ID(periodDoc.getC_Period_ID());
 					batch.setDateAcct(dateAcct);
 					batch.setDateDoc(dateAcct);
 					batch.setC_Currency_ID(imp.getC_Currency_ID());
 					batch.saveEx(trxName);
-					addBufferLog(0, null, null, "ZZ_JournalBatchImported", I_GL_JournalBatch.Table_ID, batch.getGL_JournalBatch_ID());
 				}
 				
 				
 				for (int periodIndex = 0; periodIndex < PeriodNum.values().length; periodIndex++) {
 					PeriodNum period = PeriodNum.values()[periodIndex];
-					Object periodAmount = imp.get_Value(period.toString());
+					Object periodAmount = imp.get_Value(period.toValue());
 					BigDecimal amt = (BigDecimal) periodAmount;
                     if (periodAmount == null || amt.compareTo(BigDecimal.ZERO) == 0) {
                     	continue;
                     }
-                	//m_DateAcct.setm
-					LocalDateTime perdiodMonth = dateAcct.toLocalDateTime().withMonth(periodIndex + 1);
-					Timestamp periodDate = Timestamp.valueOf(perdiodMonth);
-					MPeriod peridod = MPeriod.get(getCtx(), periodDate, imp.getAD_Org_ID(), null);
+                	
+                    MPeriod peridod = null;
+                    MultiKey<Object> errorKey = new MultiKey<Object>(imp.getAD_Org_ID(), period);
+					
+					if (!periodErrosInfo.containsKey(errorKey)) {
+						peridod = getPeriod(dateAcct, imp.getAD_Org_ID(), period);
+					}
+					
+					if (peridod == null) {
+						periodErrosInfo.put(errorKey, imp);
+						continue;
+						//errorMsg = Msg.getMsg(Env.getCtx(), "ZZ_NotFountPeriod", new Object [] {org.getName(), dateAcct});
+					}
 					
                 	String journalMapKey = Integer.toString(peridod.getC_Period_ID());
                 	MJournal journalPerPeriod = mapJournal.get(journalMapKey);
@@ -337,7 +434,7 @@ public class ImportBudgetPeriods extends SvrProcess{
     					journalPerPeriod.setGL_Budget_ID(imp.getGL_Budget_ID());
     					journalPerPeriod.setC_Currency_ID(imp.getC_Currency_ID());
     					
-    					journalPerPeriod.setDateAcct(periodDate);
+    					journalPerPeriod.setDateAcct(peridod.getStartDate());
     					journalPerPeriod.setDateDoc (imp.getDateAcct());
     					
     					journalPerPeriod.saveEx(trxName);
@@ -356,7 +453,7 @@ public class ImportBudgetPeriods extends SvrProcess{
 					else
 						line.setAmtSourceDr(amt);
     				
-    				line.setDateAcct(periodDate);
+    				line.setDateAcct(peridod.getStartDate());
     				line.setAccount_ID(imp.getAccount_ID());
     				line.setC_Project_ID(imp.getC_Project_ID());
     				line.saveEx(trxName);
@@ -370,24 +467,53 @@ public class ImportBudgetPeriods extends SvrProcess{
 					imp.saveEx(trxName);
                 }
 			}
-		}catch (Exception e){
-			log.log(Level.SEVERE, "", e);
-			addLog (0, null, null, e.getMessage());
+			
+			boolean notSaveCorrectLine = !periodErrosInfo.isEmpty() && importOnlyNoErrors; 
+			boolean saveCorrectLine = !importOnlyNoErrors || periodErrosInfo.isEmpty();
+			if (noInsertLine == 0 || notSaveCorrectLine)
+				rollback();
+			
+			if (noInsertLine > 0 && saveCorrectLine) {
+				addLog (0, null, new BigDecimal (noInsertLine), "@GL_JournalLine_ID@: @Inserted@");
+				addBufferLog(0, null, null, "ZZ_JournalBatchImported", I_GL_JournalBatch.Table_ID, batch.getGL_JournalBatch_ID());
+			}
+			
+			if (!periodErrosInfo.isEmpty()){
+				for (Map.Entry<MultiKey<Object>, Collection<X_I_GLJournal>> errorInfo : periodErrosInfo.asMap().entrySet()) {
+					MOrg org = MOrg.get((int)errorInfo.getKey().getKey(0));
+					String errorMsg = Msg.getMsg(Env.getCtx(), "ZZ_NotFountPeriod", new Object[] {org.getName(), errorInfo.getKey().getKey(1)});
+					addLog(errorMsg);
+					
+					Collection<X_I_GLJournal> errorLines = errorInfo.getValue();
+					errorLines.forEach((impLine) -> {
+						impLine.setI_ErrorMsg(errorMsg);
+						impLine.saveEx(trxName);
+					});
+				}
+			}
+			
+			//	Set Error to indicator to not imported
+			String sqlNonImportToError = String.format("""
+					UPDATE I_GLJournal
+					SET I_IsImported='N', Updated=getDate()
+					WHERE I_IsImported<>'Y' 
+					""", adClientID);
+
+			int no = DB.executeUpdate(sqlNonImportToError, trxName);
+			if (no > 0)
+				addLog (0, null, new BigDecimal (no), "Not Import");
+			
+			if (importOnlyNoErrors && !periodErrosInfo.isEmpty()) {
+				commitEx();
+				throw new Exception("@PeriodNotFound@");
+			}
+				
 		}finally{
 			DB.close(rs, pstmt);
 			rs = null;
 			pstmt = null;
 		}
 		
-		//	Set Error to indicator to not imported
-		String sqlNonImportToError = String.format("""
-				UPDATE I_GLJournal
-				SET I_IsImported='N', Updated=getDate()
-				WHERE I_IsImported<>'Y' 
-				""", adClientID);
 
-		int no = DB.executeUpdate(sqlNonImportToError, trxName);
-		addLog (0, null, new BigDecimal (no), "@Errors@");
-		addLog (0, null, new BigDecimal (noInsertLine), "@GL_JournalLine_ID@: @Inserted@");
 	}
 }
