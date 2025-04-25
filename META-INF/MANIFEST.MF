@@ -6,6 +6,7 @@ Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: Ntier
 Automatic-Module-Name: za.co.ntier.payment
 Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
 Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version>=17))"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.adempiere.ui.zk;bundle-version="12.0.0"
