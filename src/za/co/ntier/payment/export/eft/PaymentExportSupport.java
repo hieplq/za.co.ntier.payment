@@ -74,4 +74,14 @@ public abstract class PaymentExportSupport implements PaymentExport{
 	public void complete () {
 		
 	}
+	
+	@Override
+	public boolean supportsDepositBatch() {
+		return true;
+	}
+	
+	@Override
+	public boolean supportsSeparateBooking() {
+		return true;
+	}
 }
