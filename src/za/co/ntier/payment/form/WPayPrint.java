@@ -29,6 +29,9 @@ public class WPayPrint extends org.adempiere.webui.apps.form.WPayPrint {
 	protected void getPluginFeatures() {
 		super.getPluginFeatures();
 		bPrint.setEnabled(true);
+		if(fDepositBatch.isReadWrite()) {
+			fDepositBatch.setValue(true);
+		}
 	}
 	
 	@Override
@@ -70,19 +73,11 @@ public class WPayPrint extends org.adempiere.webui.apps.form.WPayPrint {
 		String PaymentRule = fPaymentRule.getSelectedItem().toValueNamePair().getValue();
 		if (!getChecks(PaymentRule))
 			return;
-		
-		int startDocumentNo = ((Number)fDocumentNo.getValue()).intValue();
-		if (log.isLoggable(Level.CONFIG)) log.config("DocumentNo=" + startDocumentNo);
 
-		//	for all checks
-		//List<File> pdfList = null;
 		try
 		{
-			//int lastDocumentNo = startDocumentNo;
-			for (int i = 0; i < m_checks.length; i++){				
-				//	Update BankAccountDoc
-				MPaySelectionCheck.confirmPrint(m_checks[i], m_batch);
-			}
+			// create payment (in case not yet create) and payment into batch
+			MPaySelectionCheck.confirmPrint(m_checks, m_batch, (Boolean) fDepositBatch.getValue());
 			
 			Dialog.info(m_WindowNo, Msg.getMsg(Env.getCtx(), "ZZ_PaymentCreatedCompleted"), null, Msg.getMsg(Env.getCtx(), "PaymentCreated"), 
 					new Callback<Integer>() {
