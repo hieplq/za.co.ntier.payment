@@ -20,6 +20,13 @@ import org.compiere.util.Msg;
 public class WPayPrint extends org.adempiere.webui.apps.form.WPayPrint {
 	
 	@Override
+	protected void zkInit() throws Exception {
+		super.zkInit();
+		lDepositBatch.setText("Bank Batch");
+		fDocumentNo.setReadWrite(false);
+	}
+	
+	@Override
 	protected void loadPaymentRule() {
 		super.loadPaymentRule();
 		bProcess.setEnabled(true);
